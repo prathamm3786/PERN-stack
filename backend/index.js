@@ -6,16 +6,21 @@ import helmet from "helmet";
 import productRoutes from "./routes/productRoutes.js"; //
 import { sql } from "./config/db.js";
 import { aj } from "./lib/arcjet.js";
+import path from "path";
 dotenv.config();
 const app = express();
 
 app.use(express.json()); // Middleware to parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Middleware to parse URL-encoded bodies
 app.use(cors()); // Enable CORS for all routes
-app.use(helmet()); // Security middleware
+app.use(helmet({
+  contentSecurityPolicy: false
+})); // Security middleware
 app.use(morgan("dev")); // Logging middleware
 
+
 const PORT = process.env.PORT || 5000;
+const __dirname = path.resolve(); // Get the current directory name
 
 app.use(async (req, res, next) => {
   try {
@@ -55,6 +60,12 @@ app.use(async (req, res, next) => {
 });
 
 app.use("/api/products", productRoutes); // Route for product-related endpoints
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "frontend/dist")));
+  app.get(".", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "frontend","dist", "index.html"));
+  });
+}
 
 async function initDB() {
   try {
